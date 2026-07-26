@@ -86,11 +86,12 @@ AD_HTML = """
     <div class="container">
         <div class="timer-text">Your link is unlocking in <span id="timer" class="countdown">10</span> seconds...</div>
         
-        <div class="ad-space">
-            <!-- PASTE YOUR AD NETWORK JAVASCRIPT SNIPPET DIRECTLY BELOW THIS LINE -->
-            [ ADVERTISEMENT HERE ]
-            <!-- PASTE YOUR AD NETWORK JAVASCRIPT SNIPPET DIRECTLY ABOVE THIS LINE -->
-        </div>
+        <div class="ad-space" style="line-height: normal; padding: 20px;">
+    <h3>Test Advertisement</h3>
+    <p>Clicking this keeps the site active.</p>
+    <a href="https://www.google.com" target="_blank" style="color: blue; text-decoration: underline;">Visit Sponsor</a>
+</div>
+
 
         <br>
         <button id="skip-btn" class="btn" disabled onclick="window.location.href='/redirect/{{ code }}'">Please Wait...</button>
