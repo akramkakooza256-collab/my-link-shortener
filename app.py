@@ -181,4 +181,8 @@ def final_redirect(code):
 init_db()
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    init_db()
+    # Render requires the app to listen on 0.0.0.0 and dynamically accept its environment port
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
+
