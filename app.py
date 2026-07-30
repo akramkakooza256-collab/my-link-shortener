@@ -32,6 +32,7 @@ LOGIN_HTML = """
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="monetag" content="0027698ee828f90192299fe2c7f97d5f">
     <title>Admin Login</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; margin-top: 100px; background: #1a1a2e; color: #fff; }
