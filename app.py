@@ -2,13 +2,14 @@ import os
 import random
 import string
 import sqlite3
-from flask import Flask, render_template_string, request, redirect, url_for
+from flask import Flask, render_template_string, request, redirect, url_for, session
 
 app = Flask(__name__)
 
-# CONFIGURATION: Change 'my_secret_panel_77' to whatever secret word you want.
-# This keeps strangers from finding your link creator dashboard.
-SECRET_DASHBOARD_PATH = "my_secret_panel_77"
+# SECURITY CONFIGURATION
+app.secret_key = 'super_secret_session_key_change_me_if_you_want'
+ADMIN_USERNAME = "hellhell1a"
+ADMIN_PASSWORD = "ajepkako"
 
 DATABASE_FILE = 'links.db'
 
@@ -25,7 +26,38 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
-# Main Dashboard Template (Only accessible via your secret URL)
+# 1. LOGIN PAGE TEMPLATE
+LOGIN_HTML = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Login</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; margin-top: 100px; background: #1a1a2e; color: #fff; }
+        .login-box { max-width: 400px; margin: 0 auto; background: #162447; padding: 40px; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.3); }
+        h2 { color: #e43f5a; }
+        input { width: 90%; padding: 12px; margin: 10px 0; border: none; border-radius: 6px; background: #1f4068; color: #fff; font-size: 16px; }
+        button { width: 95%; padding: 12px; background: #e43f5a; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        button:hover { background: #b93246; }
+        .error { color: #ff4757; margin-bottom: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <h2>Private Link Manager Login</h2>
+        {% if error %} <div class="error">{{ error }}</div> {% endif %}
+        <form method="POST" action="/login">
+            <input type="text" name="username" placeholder="Username" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit">Log In</button>
+        </form>
+    </div>
+</body>
+</html>
+"""
+
+# 2. PRIVATE DASHBOARD TEMPLATE
 DASHBOARD_HTML = """
 <!DOCTYPE html>
 <html lang="en">
@@ -33,22 +65,21 @@ DASHBOARD_HTML = """
     <meta charset="UTF-8">
     <title>Private Link Manager</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; margin-top: 50px; background: #1a1a2e; color: #fff; }
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; margin-top: 50px; background: #1a1a2e; color: #fff; }
         .container { max-width: 500px; margin: 0 auto; background: #162447; padding: 40px; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.3); }
         h2 { color: #e43f5a; margin-bottom: 20px; }
         input[type="url"] { width: 90%; padding: 12px; margin: 15px 0; border: none; border-radius: 6px; background: #1f4068; color: #fff; font-size: 16px; }
-        input[type="url"]::placeholder { color: #b5b5b5; }
-        button { width: 95%; padding: 12px; background: #e43f5a; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button { width: 95%; padding: 12px; background: #e43f5a; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
         button:hover { background: #b93246; }
         .result { margin-top: 25px; font-weight: bold; background: #1f4068; padding: 15px; border-radius: 6px; border: 1px solid #e43f5a; word-break: break-all; }
         a { color: #00fff0; text-decoration: none; }
-        a:hover { text-decoration: underline; }
+        .logout { display: block; margin-top: 20px; color: #bbb; text-decoration: none; font-size: 14px; }
     </style>
 </head>
 <body>
     <div class="container">
         <h2>Private Link Shortener</h2>
-        <p>Create monetized links securely.</p>
+        <p>Logged in as: <strong>hellhell1a</strong></p>
         <form method="POST" action="/generate-short-link">
             <input type="url" name="long_url" placeholder="Paste target long URL here..." required>
             <br>
@@ -60,12 +91,13 @@ DASHBOARD_HTML = """
             <a href="{{ short_url }}" target="_blank">{{ short_url }}</a>
         </div>
         {% endif %}
+        <a href="/logout" class="logout">Logout</a>
     </div>
 </body>
 </html>
 """
 
-# Interstitial Ad Page Template (What your clickers will see)
+# 3. INTERSTITIAL AD PAGE TEMPLATE (For your link clickers)
 AD_HTML = """
 <!DOCTYPE html>
 <html lang="en">
@@ -77,8 +109,8 @@ AD_HTML = """
         .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .timer-text { font-size: 20px; font-weight: bold; margin-bottom: 20px; }
         .countdown { color: #ff4757; font-size: 24px; }
-        .ad-space { width: 300px; height: 250px; background: #eaeaea; margin: 20px auto; line-height: 250px; color: #777; border: 2px dashed #bbb; font-weight: bold; }
-        .btn { padding: 14px 28px; font-size: 18px; color: white; background: #2ed573; border: none; border-radius: 6px; cursor: not-allowed; opacity: 0.5; font-weight: bold; transition: 0.2s; }
+        .ad-space { width: 300px; height: 250px; background: #eaeaea; margin: 20px auto; padding: 15px; border: 2px dashed #bbb; font-weight: bold; }
+        .btn { padding: 14px 28px; font-size: 18px; color: white; background: #2ed573; border: none; border-radius: 6px; cursor: not-allowed; opacity: 0.5; font-weight: bold; }
         .btn.active { cursor: pointer; opacity: 1; background: #26af5f; }
     </style>
 </head>
@@ -86,12 +118,11 @@ AD_HTML = """
     <div class="container">
         <div class="timer-text">Your link is unlocking in <span id="timer" class="countdown">10</span> seconds...</div>
         
-        <div class="ad-space" style="line-height: normal; padding: 20px;">
-    <h3>Test Advertisement</h3>
-    <p>Clicking this keeps the site active.</p>
-    <a href="https://www.google.com" target="_blank" style="color: blue; text-decoration: underline;">Visit Sponsor</a>
-</div>
-
+        <div class="ad-space">
+            <h3>Test Advertisement</h3>
+            <p>Clicking this keeps the site active.</p>
+            <a href="https://google.com" target="_blank" style="color: blue; text-decoration: underline;">Visit Sponsor</a>
+        </div>
 
         <br>
         <button id="skip-btn" class="btn" disabled onclick="window.location.href='/redirect/{{ code }}'">Please Wait...</button>
@@ -119,21 +150,35 @@ AD_HTML = """
 </html>
 """
 
-# Public Homepage (Keeps your site looking benign to strangers)
+# ROUTING LOGIC
+
 @app.route('/')
 def home():
-    return "<h1>Site Under Maintenance</h1><p>Please check back later.</p>", 200
+    if 'logged_in' in session:
+        return render_template_string(DASHBOARD_HTML)
+    return render_template_string(LOGIN_HTML)
 
-# Secret Dashboard Routing
-@app.route(f'/{SECRET_DASHBOARD_PATH}')
-def dashboard():
-    return render_template_string(DASHBOARD_HTML)
+@app.route('/login', methods=['POST'])
+def login():
+    username = request.form['username']
+    password = request.form['password']
+    
+    if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+        session['logged_in'] = True
+        return redirect(url_for('home'))
+    return render_template_string(LOGIN_HTML, error="Invalid username or password.")
 
-# Handle link generation requests
+@app.route('/logout')
+def logout():
+    session.pop('logged_in', None)
+    return redirect(url_for('home'))
+
 @app.route('/generate-short-link', methods=['POST'])
 def shorten():
+    if 'logged_in' not in session:
+        return redirect(url_for('home'))
+        
     long_url = request.form['long_url']
-    # Generates a random 6-character short code
     code = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
     
     conn = get_db_connection()
@@ -141,18 +186,13 @@ def shorten():
     conn.commit()
     conn.close()
     
-    # Builds the full short URL link dynamically
     short_url = request.host_url + code
     return render_template_string(DASHBOARD_HTML, short_url=short_url)
 
-# Display ad page to incoming traffic
 @app.route('/<code>')
 def ad_page(code):
-    # Ignore favicon requests from web browsers
     if code == 'favicon.ico':
         return '', 204
-    if code == SECRET_DASHBOARD_PATH:
-        return redirect(url_for('dashboard'))
         
     conn = get_db_connection()
     url_entry = conn.execute('SELECT * FROM urls WHERE short_code = ?', (code,)).fetchone()
@@ -162,7 +202,6 @@ def ad_page(code):
         return render_template_string(AD_HTML, code=code)
     return "Invalid Link Address", 404
 
-# Route that triggers after user clicks 'Skip Ad'
 @app.route('/redirect/<code>')
 def final_redirect(code):
     conn = get_db_connection()
@@ -177,12 +216,10 @@ def final_redirect(code):
     conn.close()
     return "Invalid Target Link", 404
 
-# Ensures the DB builds instantly upon app deployment
 init_db()
 
 if __name__ == '__main__':
     init_db()
-    # Render requires the app to listen on 0.0.0.0 and dynamically accept its environment port
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
-
+    
