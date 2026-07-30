@@ -120,9 +120,7 @@ AD_HTML = """
         <div class="timer-text">Your link is unlocking in <span id="timer" class="countdown">10</span> seconds...</div>
         
         <div class="ad-space">
-            <h3>Test Advertisement</h3>
-            <p>Clicking this keeps the site active.</p>
-            <a href="https://google.com" target="_blank" style="color: blue; text-decoration: underline;">Visit Sponsor</a>
+            <script src="https://quge5.com/88/tag.min.js" data-zone="265498" async data-cfasync="false"></script>
         </div>
 
         <br>
