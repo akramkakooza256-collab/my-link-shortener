@@ -227,6 +227,7 @@ def final_redirect(code):
     return "Invalid Target Link", 404
 
 if __name__ == '__main__':
-    init_db()
+    init_db()  # <-- THIS LINE CREATES THE MISSING TABLE AUTOMATICALLY
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
+
