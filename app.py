@@ -1,30 +1,111 @@
 import os
 import random
 import string
-import sqlite3
+import psycopg2
+from psycopg2.extras import DictCursor
 from flask import Flask, render_template_string, request, redirect, url_for, session
 
 app = Flask(__name__)
 
-# SECURITY CONFIGURATION
 app.secret_key = 'super_secret_session_key_change_me_if_you_want'
 ADMIN_USERNAME = "hellhell1a"
 ADMIN_PASSWORD = "ajepkako"
 
-DATABASE_FILE = 'links.db'
+# GET THE ONLINE DATABASE URL FROM RENDER SETTINGS
+DATABASE_URL = os.environ.get('DATABASE_URL')
 
 def init_db():
-    conn = sqlite3.connect(DATABASE_FILE)
+    conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS urls 
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT, short_code TEXT UNIQUE, long_url TEXT, clicks INTEGER)''')
+                 (id SERIAL PRIMARY KEY, short_code TEXT UNIQUE, long_url TEXT, clicks INTEGER DEFAULT 0)''')
     conn.commit()
+    c.close()
     conn.close()
 
 def get_db_connection():
-    conn = sqlite3.connect(DATABASE_FILE)
-    conn.row_factory = sqlite3.Row
+    conn = psycopg2.connect(DATABASE_URL, sslmode='require', cursor_factory=DictCursor)
     return conn
+
+# [YOUR LOGIN_HTML, DASHBOARD_HTML, AND AD_HTML REMAIN EXACTLY THE SAME AS BEFORE]
+
+@app.route('/')
+def home():
+    if 'logged_in' in session:
+        return render_template_string(DASHBOARD_HTML)
+    return render_template_string(LOGIN_HTML)
+
+@app.route('/login', methods=['POST'])
+def login():
+    username = request.form['username']
+    password = request.form['password']
+    if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+        session['logged_in'] = True
+        return redirect(url_for('home'))
+    return render_template_string(LOGIN_HTML, error="Invalid username or password.")
+
+@app.route('/logout')
+def logout():
+    session.pop('logged_in', None)
+    return redirect(url_for('home'))
+
+@app.route('/generate-short-link', methods=['POST'])
+def shorten():
+    if 'logged_in' not in session:
+        return redirect(url_for('home'))
+        
+    long_url = request.form['long_url']
+    code = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
+    
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute('INSERT INTO urls (short_code, long_url, clicks) VALUES (%s, %s, %s)', (code, long_url, 0))
+    conn.commit()
+    c.close()
+    conn.close()
+    
+    short_url = request.host_url + code
+    return render_template_string(DASHBOARD_HTML, short_url=short_url)
+
+@app.route('/<code>')
+def ad_page(code):
+    if code == 'favicon.ico':
+        return '', 204
+        
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute('SELECT * FROM urls WHERE short_code = %s', (code,))
+    url_entry = c.fetchone()
+    c.close()
+    conn.close()
+    
+    if url_entry:
+        return render_template_string(AD_HTML, code=code)
+    return "Invalid Link Address", 404
+
+@app.route('/redirect/<code>')
+def final_redirect(code):
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute('SELECT * FROM urls WHERE short_code = %s', (code,))
+    url_entry = c.fetchone()
+    
+    if url_entry:
+        c.execute('UPDATE urls SET clicks = clicks + 1 WHERE short_code = %s', (code,))
+        conn.commit()
+        c.close()
+        conn.close()
+        return redirect(url_entry['long_url'])
+        
+    c.close()
+    conn.close()
+    return "Invalid Target Link", 404
+
+if __name__ == '__main__':
+    init_db()
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
+    
 
 # 1. LOGIN PAGE TEMPLATE
 LOGIN_HTML = """
