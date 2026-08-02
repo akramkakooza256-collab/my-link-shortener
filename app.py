@@ -118,7 +118,7 @@ AD_HTML = """
         <div class="timer-text">Your link is unlocking in <span id="timer" class="countdown">10</span> seconds...</div>
         
         <div class="ad-space">
-            <script src="https://quge5.com" data-zone="265498" async data-cfasync="false"></script>
+            <script src="https://quge5.com/88/tag.min.js" data-zone="265498" async data-cfasync="false"></script>
         </div>
 
         <br>
