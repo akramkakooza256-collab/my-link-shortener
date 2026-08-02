@@ -12,20 +12,16 @@ app.secret_key = 'super_secret_session_key_change_me_if_you_want'
 ADMIN_USERNAME = "hellhell1a"
 ADMIN_PASSWORD = "ajepkako"
 
-# GET THE ONLINE DATABASE URL FROM RENDER SETTINGS
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
-def init_db():
-    conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+def get_db_connection():
+    conn = psycopg2.connect(DATABASE_URL, sslmode='require', cursor_factory=DictCursor)
+    # Ensure the 'urls' table exists on every connection to prevent UndefinedTable errors
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS urls 
                  (id SERIAL PRIMARY KEY, short_code TEXT UNIQUE, long_url TEXT, clicks INTEGER DEFAULT 0)''')
     conn.commit()
     c.close()
-    conn.close()
-
-def get_db_connection():
-    conn = psycopg2.connect(DATABASE_URL, sslmode='require', cursor_factory=DictCursor)
     return conn
 
 # 1. LOGIN PAGE TEMPLATE
@@ -227,7 +223,5 @@ def final_redirect(code):
     return "Invalid Target Link", 404
 
 if __name__ == '__main__':
-    init_db()  # <-- THIS LINE CREATES THE MISSING TABLE AUTOMATICALLY
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
-
