@@ -96,7 +96,7 @@ DASHBOARD_HTML = """
 </html>
 """
 
-# 3. INTERSTITIAL AD PAGE TEMPLATE (For your link clickers)
+# 3. INTERSTITIAL AD PAGE TEMPLATE (With Built-in Tor Blocker)
 AD_HTML = """
 <!DOCTYPE html>
 <html lang="en">
@@ -111,41 +111,80 @@ AD_HTML = """
         .ad-space { width: 300px; height: 250px; background: #eaeaea; margin: 20px auto; padding: 15px; border: 2px dashed #bbb; font-weight: bold; }
         .btn { padding: 14px 28px; font-size: 18px; color: white; background: #2ed573; border: none; border-radius: 6px; cursor: not-allowed; opacity: 0.5; font-weight: bold; }
         .btn.active { cursor: pointer; opacity: 1; background: #26af5f; }
+        
+        /* Tor Blocker Screen Styling */
+        #tor-warning { display: none; background: #ff4757; color: white; padding: 25px; border-radius: 8px; font-size: 18px; font-weight: bold; line-height: 1.6; margin-bottom: 20px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="timer-text">Your link is unlocking in <span id="timer" class="countdown">10</span> seconds...</div>
-        
-        <div class="ad-space">
-            <script>(function(s){s.dataset.zone='11516281',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+        <!-- Hidden Warning Area that triggers if Tor is detected -->
+        <div id="tor-warning">
+            ⚠️ ACCESS DENIED (TOR BROWSER DETECTED)<br>
+            To protect our ad network, anonymous Tor connections are strictly blocked.<br>
+            Please copy this URL and open it inside a standard browser (Chrome, Safari, Edge, or Opera) to proceed.
         </div>
 
-        <br>
-        <button id="skip-btn" class="btn" disabled onclick="window.location.href='/redirect/{{ code }}'">Please Wait...</button>
+        <div id="main-content">
+            <div class="timer-text">Your link is unlocking in <span id="timer" class="countdown">10</span> seconds...</div>
+            
+            <div class="ad-space">
+                <!-- YOUR MONETAG ANTI-ADBLOCK SCRIPT SITS SECURELY HERE -->
+                <script>(function(s){s.dataset.zone='11516281',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+            </div>
+
+            <br>
+            <button id="skip-btn" class="btn" disabled onclick="window.location.href='/redirect/{{ code }}'">Please Wait...</button>
+        </div>
     </div>
 
     <script>
-        let secondsLeft = 10;
-        const timerDisplay = document.getElementById('timer');
-        const actionButton = document.getElementById('skip-btn');
+        let isTor = false;
 
-        const countdownInterval = setInterval(() => {
-            secondsLeft--;
-            timerDisplay.textContent = secondsLeft;
-            
-            if (secondsLeft <= 0) {
-                clearInterval(countdownInterval);
-                timerDisplay.parentElement.innerHTML = "Your link is ready!";
-                actionButton.disabled = false;
-                actionButton.classList.add('active');
-                actionButton.textContent = "Skip Ad & Continue";
+        // Automated Detection: Check for Tor Browser specific browser footprints
+        if (window.onion || (navigator.plugins && navigator.plugins.length === 0 && navigator.mimeTypes && navigator.mimeTypes.length === 0 && !window.chrome)) {
+            isTor = true;
+        }
+
+        // Secondary check: Tor Browser restricts components that normal browsers use
+        try {
+            if (window.crypto && window.crypto.subtle && window.navigator.userAgent.includes("Gecko/") && !window.navigator.userAgent.includes("Firefox/")) {
+                isTor = true;
             }
-        }, 1000);
+        } catch(e) {}
+
+        const mainContent = document.getElementById('main-content');
+        const torWarning = document.getElementById('tor-warning');
+
+        if (isTor) {
+            // Instantly wipe the countdown timer and ad codes so they can't bypass it
+            mainContent.style.display = 'none';
+            mainContent.innerHTML = ''; 
+            torWarning.style.display = 'block';
+        } else {
+            // Run countdown normally for real, standard web browsers
+            let secondsLeft = 10;
+            const timerDisplay = document.getElementById('timer');
+            const actionButton = document.getElementById('skip-btn');
+
+            const countdownInterval = setInterval(() => {
+                secondsLeft--;
+                timerDisplay.textContent = secondsLeft;
+                
+                if (secondsLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    timerDisplay.parentElement.innerHTML = "Your link is ready!";
+                    actionButton.disabled = false;
+                    actionButton.classList.add('active');
+                    actionButton.textContent = "Skip Ad & Continue";
+                }
+            }, 1000);
+        }
     </script>
 </body>
 </html>
 """
+
 
 # ROUTING LOGIC
 
