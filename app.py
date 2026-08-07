@@ -15,14 +15,22 @@ ADMIN_PASSWORD = "ajepkako"
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 def get_db_connection():
-    conn = psycopg2.connect(DATABASE_URL, sslmode='require', cursor_factory=DictCursor)
-    # Ensure the 'urls' table exists on every connection to prevent UndefinedTable errors
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS urls 
-                 (id SERIAL PRIMARY KEY, short_code TEXT UNIQUE, long_url TEXT, clicks INTEGER DEFAULT 0)''')
-    conn.commit()
-    c.close()
-    return conn
+    try:
+        conn = psycopg2.connect(DATABASE_URL, sslmode='require', cursor_factory=DictCursor)
+        # Force autocommit to prevent transaction locks
+        conn.autocommit = True
+        c = conn.cursor()
+        c.execute('''CREATE TABLE IF NOT EXISTS urls 
+                     (id SERIAL PRIMARY KEY, short_code TEXT UNIQUE, long_url TEXT, clicks INTEGER DEFAULT 0)''')
+        c.close()
+        return conn
+    except Exception as e:
+        print(f"Database Connection Error: {e}")
+        # Fallback reconnect attempt
+        conn = psycopg2.connect(DATABASE_URL, sslmode='require', cursor_factory=DictCursor)
+        conn.autocommit = True
+        return conn
+
 
 # 1. LOGIN PAGE TEMPLATE
 LOGIN_HTML = """
