@@ -125,10 +125,11 @@ AD_HTML = """
     <div class="container">
         <div class="timer-text">Your link is unlocking in <span id="timer" class="countdown">10</span> seconds...</div>
         
-        <div class="ad-space">
-            <!-- YOUR DYNAMIC MONETAG TAG -->
-            <script>(function(s){s.dataset.zone='11516281',s.src='https://nap5k.com'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
-        </div>
+        <div class="ad-space" style="width: 100%; min-height: 280px; margin: 20px auto; padding: 10px; background: #fafafa; border: 3px dashed #ff9f43; display: block; clear: both; overflow: visible;">
+    <!-- YOUR MONETAG SCRIPT SITS SECURELY HERE -->
+    <script>(function(s){s.dataset.zone='11516281',s.src='https://nap5k.com'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+</div>
+
 
         <br>
         <button id="skip-btn" class="btn" disabled onclick="window.location.href='/redirect/{{ code }}'">Please Wait...</button>
