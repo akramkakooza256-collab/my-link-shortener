@@ -149,10 +149,11 @@ AD_HTML = """
     <script>
         let isTor = false;
 
-        // Automated Detection: Check for Tor Browser specific browser footprints
-        if (window.onion || (navigator.plugins && navigator.plugins.length === 0 && navigator.mimeTypes && navigator.mimeTypes.length === 0 && !window.chrome)) {
-            isTor = true;
-        }
+        // Automated Detection: Standard check
+if (window.onion) {
+    isTor = true;
+}
+
 
         // Secondary check: Tor Browser restricts components that normal browsers use
         try {
