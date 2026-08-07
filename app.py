@@ -17,20 +17,16 @@ DATABASE_URL = os.environ.get('DATABASE_URL')
 def get_db_connection():
     try:
         conn = psycopg2.connect(DATABASE_URL, sslmode='require', cursor_factory=DictCursor)
-        # Force autocommit to prevent transaction locks
         conn.autocommit = True
         c = conn.cursor()
         c.execute('''CREATE TABLE IF NOT EXISTS urls 
-                     (id SERIAL PRIMARY KEY, short_code TEXT UNIQUE, long_url TEXT, clicks INTEGER DEFAULT 0)''')
+                 (id SERIAL PRIMARY KEY, short_code TEXT UNIQUE, long_url TEXT, clicks INTEGER DEFAULT 0)''')
         c.close()
         return conn
     except Exception as e:
-        print(f"Database Connection Error: {e}")
-        # Fallback reconnect attempt
         conn = psycopg2.connect(DATABASE_URL, sslmode='require', cursor_factory=DictCursor)
         conn.autocommit = True
         return conn
-
 
 # 1. LOGIN PAGE TEMPLATE
 LOGIN_HTML = """
@@ -104,7 +100,7 @@ DASHBOARD_HTML = """
 </html>
 """
 
-# 3. INTERSTITIAL AD PAGE TEMPLATE (Clean Production Version)
+# 3. INTERSTITIAL AD PAGE TEMPLATE (Safe Diagnostic Version)
 AD_HTML = """
 <!DOCTYPE html>
 <html lang="en">
@@ -116,23 +112,24 @@ AD_HTML = """
         .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .timer-text { font-size: 20px; font-weight: bold; margin-bottom: 20px; }
         .countdown { color: #ff4757; font-size: 24px; }
-        .ad-space { width: 300px; height: 250px; background: #eaeaea; margin: 20px auto; padding: 15px; border: 2px dashed #bbb; font-weight: bold; min-height: 250px; }
+        .ad-space { width: 100%; min-height: 280px; margin: 20px auto; padding: 10px; background: #fafafa; border: 3px dashed #ff9f43; display: block; clear: both; overflow: visible; font-weight: bold; }
         .btn { padding: 14px 28px; font-size: 18px; color: white; background: #2ed573; border: none; border-radius: 6px; cursor: not-allowed; opacity: 0.5; font-weight: bold; }
         .btn.active { cursor: pointer; opacity: 1; background: #26af5f; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="timer-text">Your link is unlocking in <span id="timer" class="countdown">10</span> seconds...</div>
-        
-        <div class="ad-space" style="width: 100%; min-height: 280px; margin: 20px auto; padding: 10px; background: #fafafa; border: 3px dashed #ff9f43; display: block; clear: both; overflow: visible;">
-    <!-- YOUR MONETAG SCRIPT SITS SECURELY HERE -->
-    <script>(function(s){s.dataset.zone='11516281',s.src='https://nap5k.com'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
-</div>
+        <div id="main-content">
+            <div class="timer-text">Your link is unlocking in <span id="timer" class="countdown">10</span> seconds...</div>
+            
+            <div class="ad-space">
+                <!-- YOUR MONETAG SCRIPT SITS SECURELY HERE -->
+                <script>(function(s){s.dataset.zone='11516281',s.src='https://nap5k.com'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+            </div>
 
-
-        <br>
-        <button id="skip-btn" class="btn" disabled onclick="window.location.href='/redirect/{{ code }}'">Please Wait...</button>
+            <br>
+            <button id="skip-btn" class="btn" disabled onclick="window.location.href='/redirect/{{ code }}'">Please Wait...</button>
+        </div>
     </div>
 
     <script>
@@ -156,8 +153,6 @@ AD_HTML = """
 </body>
 </html>
 """
-
-
 
 # ROUTING LOGIC
 
@@ -193,7 +188,6 @@ def shorten():
     conn = get_db_connection()
     c = conn.cursor()
     c.execute('INSERT INTO urls (short_code, long_url, clicks) VALUES (%s, %s, %s)', (code, long_url, 0))
-    conn.commit()
     c.close()
     conn.close()
     
@@ -225,7 +219,6 @@ def final_redirect(code):
     
     if url_entry:
         c.execute('UPDATE urls SET clicks = clicks + 1 WHERE short_code = %s', (code,))
-        conn.commit()
         c.close()
         conn.close()
         return redirect(url_entry['long_url'])
@@ -237,3 +230,4 @@ def final_redirect(code):
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
+        
