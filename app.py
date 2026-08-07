@@ -124,7 +124,7 @@ AD_HTML = """
             
             <div class="ad-space">
                 <!-- YOUR MONETAG SCRIPT SITS SECURELY HERE -->
-                <script>(function(s){s.dataset.zone='11516281',s.src='https://nap5k.com'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+                <script src="https://quge5.com/88/tag.min.js" data-zone="267944" async data-cfasync="false"></script>
             </div>
 
             <br>
